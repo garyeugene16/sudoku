@@ -61,13 +61,13 @@ public class ManagerAgent extends Agent {
 //        board = new int[][]{
 //            {0, 2, 0, 6, 0, 8, 0, 0, 0},
 //            {5, 8, 0, 0, 0, 9, 7, 0, 0},
-//            {0, 0, 0, 0, 4, 0, 0, 0, 0},
+//            {0, 0, 0, 0, 4, 0, 3, 2, 8},
 //            {3, 7, 0, 0, 0, 0, 5, 0, 0},
 //            {6, 0, 0, 0, 0, 0, 0, 0, 4},
 //            {0, 0, 8, 0, 0, 0, 0, 1, 3},
-//            {0, 0, 0, 0, 2, 0, 0, 0, 0},
+//            {0, 0, 0, 0, 2, 4, 0, 0, 0},
 //            {0, 0, 9, 8, 0, 0, 0, 3, 6},
-//            {0, 0, 0, 3, 0, 6, 0, 9, 0}
+//            {8, 1, 0, 3, 0, 6, 0, 9, 0}
 //        };
         //expert
 //        board = new int[][]{
@@ -81,7 +81,6 @@ public class ManagerAgent extends Agent {
 //            {9, 0, 3, 0, 0, 0, 0, 0, 0},
 //            {0, 2, 0, 0, 0, 0, 1, 0, 0}
 //        };
-
         // 2. TAMPILKAN GUI
         //kirim 'this' (agen manager sendiri) ke GUI agar GUI bisa memanggil kita balik
         myGui = new SudokuGUI(this);

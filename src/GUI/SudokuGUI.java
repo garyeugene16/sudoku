@@ -79,7 +79,7 @@ public class SudokuGUI extends javax.swing.JFrame {
         });
     }
 
-    // --- FUNGSI SETUP: Menampilkan soal awal (jika ada) ---
+    //Menampilkan soal awal
     public void setInitialBoard(int[][] board) {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
