@@ -73,40 +73,155 @@ public class NumberAgent extends Agent {
         }
     }
 
-    // Fungsi untuk mencari posisi yang VALID untuk 'myNumber'
+//    // Fungsi untuk mencari posisi yang VALID untuk 'myNumber'
+//    private void proposeMove(int[][] board, ACLMessage originalMsg) {
+//        // Loop seluruh papan
+//        for (int row = 0; row < 9; row++) {
+//            for (int col = 0; col < 9; col++) {
+//
+//                // Jika kotak ini kosong (0)
+//                if (board[row][col] == 0) {
+//
+//                    // Cek apakah angka SAYA (myNumber) valid ditaruh di sini?
+//                    if (isValidMove(board, row, col, myNumber)) {
+//
+//                        // LOGIKA TAMBAHAN (PENTING):
+//                        // Agar tidak bentrok, kita bisa pakai logika sederhana dulu:
+//                        // "Jika valid, langsung ajukan."
+//                        // (Nanti Manager yang memutuskan terima/tolak).
+//                        // Kirim pesan PROPOSE ke Manager
+//                        ACLMessage reply = originalMsg.createReply();
+//                        reply.setPerformative(ACLMessage.PROPOSE);
+//
+//                        // Format Pesan: "row,col,number" (misal: "0,5,9")
+//                        reply.setContent(row + "," + col + "," + myNumber);
+//
+//                        System.out.println("Robot " + myNumber + " mengajukan posisi: [" + row + "," + col + "]");
+//
+//                        send(reply);
+//
+//                        // Opsional: Langsung return agar tidak spamming banyak proposal sekaligus
+//                        // Agen akan menunggu update papan berikutnya.
+//                        return;
+//                    }
+//                }
+//            }
+//        }
+//    }
+    // --- LOGIKA UTAMA: MENCARI LANGKAH ---
     private void proposeMove(int[][] board, ACLMessage originalMsg) {
-        // Loop seluruh papan
+
+        // Opsi 1: Hidden Single
+        // Cek setiap baris, kolom, dan blok.
+        // Apakah ada kotak kosong yang HANYA BISA DIISI oleh angka tsb
+        // (Artinya angka lain tidak valid di situ)
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
-
-                // Jika kotak ini kosong (0)
+                // Jika kotak kosong
                 if (board[row][col] == 0) {
 
-                    // Cek apakah angka SAYA (myNumber) valid ditaruh di sini?
+                    // 1. Cek dulu apakah SAYA boleh masuk sini?
                     if (isValidMove(board, row, col, myNumber)) {
 
-                        // LOGIKA TAMBAHAN (PENTING):
-                        // Agar tidak bentrok, kita bisa pakai logika sederhana dulu:
-                        // "Jika valid, langsung ajukan."
-                        // (Nanti Manager yang memutuskan terima/tolak).
-                        // Kirim pesan PROPOSE ke Manager
-                        ACLMessage reply = originalMsg.createReply();
-                        reply.setPerformative(ACLMessage.PROPOSE);
-
-                        // Format Pesan: "row,col,number" (misal: "0,5,9")
-                        reply.setContent(row + "," + col + "," + myNumber);
-
-                        System.out.println("Robot " + myNumber + " mengajukan posisi: [" + row + "," + col + "]");
-
-                        send(reply);
-
-                        // Opsional: Langsung return agar tidak spamming banyak proposal sekaligus
-                        // Agen akan menunggu update papan berikutnya.
-                        return;
+                        // 2. Cek apakah ini TEMPAT SPESIAL buat saya?
+                        // (Cek apakah angka lain 1-9 BISA masuk sini?)
+                        if (isOnlyMeValidHere(board, row, col)) {
+                            // KETEMU! Ini pasti benar.
+                            sendProposal(originalMsg, row, col);
+                            return; // Selesai, ajukan satu saja biar tidak rebutan
+                        }
                     }
                 }
             }
         }
+
+        // STRATEGI 2: NAKED SINGLE (FALLBACK)
+        // Kalau strategi 1 tidak nemu, pakai cara lama (Scan biasa).
+        // Tapi kita filter: hanya ajukan jika di baris/kolom itu
+        // saya adalah satu-satunya opsi "terbuka" untuk posisi ini.
+        // (Untuk penyederhanaan, kita pakai scan biasa tapi dengan validasi ketat di atas)
+        // 2.A. Cek per BARIS
+        for (int r = 0; r < 9; r++) {
+            // Cek apakah baris ini sudah punya angka saya?
+            boolean hasMyNum = false;
+            for (int c = 0; c < 9; c++) {
+                if (board[r][c] == myNumber) {
+                    hasMyNum = true;
+                    break;
+                }
+            }
+
+            if (!hasMyNum) {
+                // Baris ini belum punya angka saya. Hitung ada berapa tempat valid.
+                int validCount = 0;
+                int targetCol = -1;
+
+                for (int c = 0; c < 9; c++) {
+                    if (board[r][c] == 0 && isValidMove(board, r, c, myNumber)) {
+                        validCount++;
+                        targetCol = c;
+                    }
+                }
+
+                // EUREKA! Cuma ada 1 tempat di baris ini yang muat buat saya.
+                if (validCount == 1) {
+                    sendProposal(originalMsg, r, targetCol);
+                    return;
+                }
+            }
+        }
+
+        // 2.B. Cek per KOLOM
+        for (int c = 0; c < 9; c++) {
+            // Cek apakah kolom ini sudah punya angka saya?
+            boolean hasMyNum = false;
+            for (int r = 0; r < 9; r++) {
+                if (board[r][c] == myNumber) {
+                    hasMyNum = true;
+                    break;
+                }
+            }
+
+            if (!hasMyNum) {
+                int validCount = 0;
+                int targetRow = -1;
+
+                for (int r = 0; r < 9; r++) {
+                    if (board[r][c] == 0 && isValidMove(board, r, c, myNumber)) {
+                        validCount++;
+                        targetRow = r;
+                    }
+                }
+
+                // EUREKA! Cuma ada 1 tempat di kolom ini yang muat buat saya.
+                if (validCount == 1) {
+                    sendProposal(originalMsg, targetRow, c);
+                    return;
+                }
+            }
+        }
+    }
+
+    // --- Helper Baru: Cek Deduksi ---
+    private boolean isOnlyMeValidHere(int[][] board, int row, int col) {
+        // Cek semua angka lain (selain myNumber)
+        for (int otherNum = 1; otherNum <= 9; otherNum++) {
+            if (otherNum != myNumber) {
+                // Apakah angka lain itu valid ditaruh di sini?
+                if (isValidMove(board, row, col, otherNum)) {
+                    return false; // Yah, angka lain juga bisa. Bukan Hidden Single.
+                }
+            }
+        }
+        return true; // HORE! Cuma saya yang bisa masuk sini.
+    }
+
+    private void sendProposal(ACLMessage originalMsg, int row, int col) {
+        ACLMessage reply = originalMsg.createReply();
+        reply.setPerformative(ACLMessage.PROPOSE);
+        reply.setContent(row + "," + col + "," + myNumber);
+        System.out.println("Robot " + myNumber + " menemukan langkah PASTI di [" + row + "," + col + "]");
+        send(reply);
     }
 
     // 1. Cek apakah angka valid di posisi tersebut (Aturan Sudoku standar)
