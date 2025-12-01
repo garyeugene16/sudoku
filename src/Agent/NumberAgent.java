@@ -33,7 +33,7 @@ public class NumberAgent extends Agent {
                 return;
             }
         } else {
-            System.err.println("Error: Robot Angka butuh argumen (contoh: 1).");
+            System.err.println("Error: Robot Angka butuh argumen.");
             doDelete();
             return;
         }
@@ -47,7 +47,7 @@ public class NumberAgent extends Agent {
 
         @Override
         public void action() {
-            // Hanya menerima pesan tipe INFORM (Pemberitahuan Papan)
+            // Hanya menerima pesan tipe INFORM
             MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
             ACLMessage msg = myAgent.receive(mt);
 
@@ -56,7 +56,7 @@ public class NumberAgent extends Agent {
 
                 // Jika pesan berisi perintah "TERMINATE", agen mati
                 if (content.equalsIgnoreCase("TERMINATE")) {
-                    System.out.println("Robot " + myNumber + ": Tugas selesai. Pulang.");
+                    System.out.println("Robot " + myNumber + ": Tugas selesai.");
                     myAgent.doDelete();
                     return;
                 }
@@ -108,41 +108,37 @@ public class NumberAgent extends Agent {
 //            }
 //        }
 //    }
-    // --- LOGIKA UTAMA: MENCARI LANGKAH ---
+    //Mencari langkah
     private void proposeMove(int[][] board, ACLMessage originalMsg) {
 
-        // Opsi 1: Hidden Single
-        // Cek setiap baris, kolom, dan blok.
-        // Apakah ada kotak kosong yang HANYA BISA DIISI oleh angka tsb
-        // (Artinya angka lain tidak valid di situ)
+        // Cara 1: Hidden Single
+        // Cek setiap baris, kolom, dan blok(3x3).
+        // Cek apakah ada kotak kosong yang hanya bisa diisi oleh angka tsb
+        // Artinya angka lain tidak valid di situ
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
                 // Jika kotak kosong
                 if (board[row][col] == 0) {
 
-                    // 1. Cek dulu apakah SAYA boleh masuk sini?
+                    // 1. Cek dulu apakah angka boleh diletakkan di sini?
                     if (isValidMove(board, row, col, myNumber)) {
 
-                        // 2. Cek apakah ini TEMPAT SPESIAL buat saya?
-                        // (Cek apakah angka lain 1-9 BISA masuk sini?)
+                        // 2. Cek apakah ini khusus angka ini?
+                        // (Cek apakah angka lain 1-9 bisa masuk sini?)
                         if (isOnlyMeValidHere(board, row, col)) {
-                            // KETEMU! Ini pasti benar.
                             sendProposal(originalMsg, row, col);
-                            return; // Selesai, ajukan satu saja biar tidak rebutan
+                            return;
                         }
                     }
                 }
             }
         }
 
-        // STRATEGI 2: NAKED SINGLE (FALLBACK)
-        // Kalau strategi 1 tidak nemu, pakai cara lama (Scan biasa).
-        // Tapi kita filter: hanya ajukan jika di baris/kolom itu
-        // saya adalah satu-satunya opsi "terbuka" untuk posisi ini.
-        // (Untuk penyederhanaan, kita pakai scan biasa tapi dengan validasi ketat di atas)
+        // Cara 2: Naked Single (Fallback)
+        //bekerja dengan cara fokus pada satu kotak tertentu jadi tidak ada saingan angka lain di kotak itu.
         // 2.A. Cek per BARIS
         for (int r = 0; r < 9; r++) {
-            // Cek apakah baris ini sudah punya angka saya?
+            // Cek apakah baris ini sudah punya angka myNumber
             boolean hasMyNum = false;
             for (int c = 0; c < 9; c++) {
                 if (board[r][c] == myNumber) {
@@ -152,7 +148,7 @@ public class NumberAgent extends Agent {
             }
 
             if (!hasMyNum) {
-                // Baris ini belum punya angka saya. Hitung ada berapa tempat valid.
+                // Baris ini belum punya angka myNumber. Hitung ada berapa tempat valid.
                 int validCount = 0;
                 int targetCol = -1;
 
@@ -163,7 +159,7 @@ public class NumberAgent extends Agent {
                     }
                 }
 
-                // EUREKA! Cuma ada 1 tempat di baris ini yang muat buat saya.
+                // Cuma ada 1 tempat di baris ini yang muat buat angka myNumber.
                 if (validCount == 1) {
                     sendProposal(originalMsg, r, targetCol);
                     return;
@@ -173,7 +169,7 @@ public class NumberAgent extends Agent {
 
         // 2.B. Cek per KOLOM
         for (int c = 0; c < 9; c++) {
-            // Cek apakah kolom ini sudah punya angka saya?
+            // Cek apakah kolom ini sudah punya angka myNumber
             boolean hasMyNum = false;
             for (int r = 0; r < 9; r++) {
                 if (board[r][c] == myNumber) {
@@ -193,10 +189,55 @@ public class NumberAgent extends Agent {
                     }
                 }
 
-                // EUREKA! Cuma ada 1 tempat di kolom ini yang muat buat saya.
+                // Cuma ada 1 tempat di baris ini yang muat buat angka myNumber.
                 if (validCount == 1) {
                     sendProposal(originalMsg, targetRow, c);
                     return;
+                }
+            }
+        }
+
+        // 2.C Cek per BLOK 3x3
+        // Loop untuk setiap blok 3x3 (total ada 9 blok)
+        for (int blockRow = 0; blockRow < 9; blockRow += 3) {
+            for (int blockCol = 0; blockCol < 9; blockCol += 3) {
+
+                // Cek 1: Apakah blok ini sudah punya angka saya?
+                boolean hasMyNum = false;
+                for (int r = 0; r < 3; r++) {
+                    for (int c = 0; c < 3; c++) {
+                        if (board[blockRow + r][blockCol + c] == myNumber) {
+                            hasMyNum = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Cek 2: Jika belum, cari posisi valid di dalam blok ini
+                if (!hasMyNum) {
+                    int validCount = 0;
+                    int targetRow = -1;
+                    int targetCol = -1;
+
+                    for (int r = 0; r < 3; r++) {
+                        for (int c = 0; c < 3; c++) {
+                            int actualRow = blockRow + r;
+                            int actualCol = blockCol + c;
+
+                            // Cek apakah kotak ini kosong & valid
+                            if (board[actualRow][actualCol] == 0 && isValidMove(board, actualRow, actualCol, myNumber)) {
+                                validCount++;
+                                targetRow = actualRow;
+                                targetCol = actualCol;
+                            }
+                        }
+                    }
+
+                    // EUREKA! Cuma ada 1 tempat di blok ini yang muat buat saya.
+                    if (validCount == 1) {
+                        sendProposal(originalMsg, targetRow, targetCol);
+                        return;
+                    }
                 }
             }
         }
@@ -209,11 +250,11 @@ public class NumberAgent extends Agent {
             if (otherNum != myNumber) {
                 // Apakah angka lain itu valid ditaruh di sini?
                 if (isValidMove(board, row, col, otherNum)) {
-                    return false; // Yah, angka lain juga bisa. Bukan Hidden Single.
+                    return false; // berarti, angka lain juga bisa, artinya bukan Hidden Single.
                 }
             }
         }
-        return true; // HORE! Cuma saya yang bisa masuk sini.
+        return true; // Cuma angka myNumber yang bisa masuk sini.
     }
 
     private void sendProposal(ACLMessage originalMsg, int row, int col) {
