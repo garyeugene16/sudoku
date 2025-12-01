@@ -18,28 +18,24 @@ import javax.swing.SwingUtilities;
  */
 public class SudokuGUI extends javax.swing.JFrame {
 
-    // Array 2D untuk menyimpan 81 kotak isian (agar mudah diakses Robot)
+    // Array 2D untuk menyimpan 81 kotak isian
     private JTextField[][] cells = new JTextField[9][9];
 
-    // Referensi ke Agen Manager (agar GUI bisa lapor ke Manager)
     private ManagerAgent myAgent;
 
     public SudokuGUI() {
-        this.myAgent = null; // Tidak ada agen yang tersambung
+        this.myAgent = null;
         initComponents();    // Bikin panel & tombol
         initCustomGrid();    // Bikin 81 kotak angka
     }
 
-    /**
-     * Creates new form SudokuGUI
-     */
     public SudokuGUI(ManagerAgent agent) {
         this.myAgent = agent;
-        initComponents();
-        initCustomGrid();
+        initComponents(); // Bikin panel & tombol
+        initCustomGrid();  // Bikin 81 kotak angka
     }
 
-    // --- FUNGSI PENTING: Membuat 81 Kotak secara Otomatis ---
+    //Membuat 81 Kotak secara Otomatis
     private void initCustomGrid() {
         // 1. Ubah Panel menjadi layout Grid 9x9
         PuzzlePanel.setLayout(new GridLayout(9, 9));
@@ -54,7 +50,6 @@ public class SudokuGUI extends javax.swing.JFrame {
                 cells[i][j].setHorizontalAlignment(JTextField.CENTER); // Teks di tengah
                 cells[i][j].setFont(font);
 
-                // Sedikit warna selang-seling untuk kotak 3x3 (Kosmetik)
                 if (((i / 3) + (j / 3)) % 2 == 0) {
                     cells[i][j].setBackground(new Color(240, 240, 240));
                 }
@@ -69,7 +64,7 @@ public class SudokuGUI extends javax.swing.JFrame {
         PuzzlePanel.repaint();
     }
 
-    // --- FUNGSI UPDATE: Dipanggil ManagerAgent saat Robot menemukan angka ---
+    // Update board
     public void updateBoardGUI(int[][] board) {
         SwingUtilities.invokeLater(() -> {
             for (int i = 0; i < 9; i++) {

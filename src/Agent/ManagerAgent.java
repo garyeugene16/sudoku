@@ -46,19 +46,6 @@ public class ManagerAgent extends Agent {
             {0, 0, 0, 0, 8, 0, 0, 7, 9}
         };
 
-        // 2. Kirim Papan Awal ke semua Robot
-        // Kita beri jeda sedikit agar semua Robot siap dulu
-//        addBehaviour(new OneShotBehaviour() {
-//            @Override
-//            public void action() {
-//                try {
-//                    Thread.sleep(2000);
-//                } catch (InterruptedException e) {
-//                }
-//                System.out.println("Manager: Mengirim papan awal ke semua robot...");
-//                broadcastBoard("INFORM");
-//            }
-//        });
         // 2. TAMPILKAN GUI
         //kirim 'this' (agen manager sendiri) ke GUI agar GUI bisa memanggil kita balik
         myGui = new SudokuGUI(this);
@@ -71,7 +58,7 @@ public class ManagerAgent extends Agent {
 
     // Fungsi ini digunakan dan dipanggil oleh tombol "Solve" di GUI
     public void startSolvingFromGUI(int[][] currentBoardFromGUI) {
-        System.out.println("Tombol ditekan! Mengambil alih papan dari GUI dan menyuruh robot kerja...");
+        System.out.println("Tombol ditekan! Mengambil alih papan dari GUI dan robot bekerja...");
 
         // Update data internal manager dengan apa yang ada di layar (termasuk input user)
         this.board = currentBoardFromGUI;
@@ -150,7 +137,7 @@ public class ManagerAgent extends Agent {
         if (messageType.equals("TERMINATE")) {
             msg.setContent("TERMINATE");
         } else {
-            // Ubah array 2D papan menjadi String CSV panjang
+            // Ubah array 2D papan menjadi String panjang
             msg.setContent(boardToString(board));
         }
 
@@ -185,7 +172,7 @@ public class ManagerAgent extends Agent {
 
     // Print papan ke terminal
     private void printBoard() {
-        System.out.println("--- HASIL AKHIR ---");
+        System.out.println("--- Hasil Akhir ---");
         for (int i = 0; i < 9; i++) {
             if (i % 3 == 0 && i != 0) {
                 System.out.println("---------------------");
