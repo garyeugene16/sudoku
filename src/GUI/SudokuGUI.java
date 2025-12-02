@@ -5,10 +5,15 @@
 package GUI;
 
 import Agent.ManagerAgent;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
@@ -20,6 +25,9 @@ public class SudokuGUI extends javax.swing.JFrame {
 
     // Array 2D untuk menyimpan 81 kotak isian
     private JTextField[][] cells = new JTextField[9][9];
+    
+    // Label untuk status angka tersisa (1-9)
+    private JLabel[] statusLabels = new JLabel[9];
 
     private ManagerAgent myAgent;
 
@@ -27,12 +35,14 @@ public class SudokuGUI extends javax.swing.JFrame {
         this.myAgent = null;
         initComponents();    // Bikin panel & tombol
         initCustomGrid();    // Bikin 81 kotak angka
+        initStatusPanel(); // Bikin status Baru
     }
 
     public SudokuGUI(ManagerAgent agent) {
         this.myAgent = agent;
         initComponents(); // Bikin panel & tombol
         initCustomGrid();  // Bikin 81 kotak angka
+        initStatusPanel(); // Bikin status Baru
     }
 
     //Membuat 81 Kotak secara Otomatis
@@ -63,17 +73,93 @@ public class SudokuGUI extends javax.swing.JFrame {
         PuzzlePanel.revalidate();
         PuzzlePanel.repaint();
     }
+    
+    private void initStatusPanel() {
+        // 1. Ubah Layout Frame utama menjadi BorderLayout agar rapi
+        // Kita reset layout bawaan NetBeans agar bisa menaruh panel di bawah
+        getContentPane().setLayout(new BorderLayout(10, 10));
+        
+        // Pindahkan komponen yang sudah ada ke posisi semestinya
+        JPanel topPanel = new JPanel();
+        topPanel.add(jLabel1);
+        topPanel.add(btnSolve);
+        
+        getContentPane().add(topPanel, BorderLayout.NORTH);
+        getContentPane().add(PuzzlePanel, BorderLayout.CENTER);
 
+        // 2. Buat Panel Status Baru
+        JPanel statusPanel = new JPanel();
+        // Layout: 2 Baris (Judul & Isi), 10 Kolom (Label "Angka" + 9 Angka)
+        statusPanel.setLayout(new GridLayout(2, 10)); 
+        statusPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        statusPanel.setPreferredSize(new Dimension(350, 60)); // Tinggi panel status
+
+        // 3. Baris 1: Header (Teks "Angka" dan 1-9)
+        addCellToStatus(statusPanel, "Angka", true);
+        for (int i = 1; i <= 9; i++) {
+            addCellToStatus(statusPanel, String.valueOf(i), true);
+        }
+
+        // 4. Baris 2: Nilai Tersisa (Teks "Tersisa" dan 0-9)
+        addCellToStatus(statusPanel, "Tersisa", true);
+        for (int i = 0; i < 9; i++) {
+            statusLabels[i] = new JLabel("9"); // Awalnya semua tersisa 9
+            statusLabels[i].setHorizontalAlignment(JLabel.CENTER);
+            statusLabels[i].setBorder(BorderFactory.createLineBorder(Color.GRAY));
+            statusLabels[i].setOpaque(true);
+            statusLabels[i].setBackground(Color.WHITE);
+            statusPanel.add(statusLabels[i]);
+        }
+
+        // Masukkan Panel Status ke Bawah (South)
+        getContentPane().add(statusPanel, BorderLayout.SOUTH);
+        
+        // Refresh Frame agar layout baru terbaca
+        pack();
+    }
+    
+    // Helper untuk membuat kotak di status bar
+    private void addCellToStatus(JPanel p, String text, boolean isHeader) {
+        JLabel l = new JLabel(text);
+        l.setHorizontalAlignment(JLabel.CENTER);
+        l.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        if (isHeader) {
+            l.setFont(l.getFont().deriveFont(Font.BOLD));
+            l.setBackground(new Color(220, 220, 220));
+            l.setOpaque(true);
+        }
+        p.add(l);
+    }
+    
     // Update board
     public void updateBoardGUI(int[][] board) {
+        int[] counts = new int[10]; // Array hitung frekuensi angka 1-9
         SwingUtilities.invokeLater(() -> {
             for (int i = 0; i < 9; i++) {
                 for (int j = 0; j < 9; j++) {
+                    int val = board[i][j];
                     if (board[i][j] != 0) {
                         cells[i][j].setText(String.valueOf(board[i][j]));
                         // Beri warna biru untuk angka yang ditemukan robot
                         cells[i][j].setForeground(Color.BLUE);
+                        // Hitung jumlah angka yang muncul
+                        if(val >= 1 && val <= 9) {
+                            counts[val]++;
+                        }
                     }
+                }
+            }
+            for (int k = 1; k <= 9; k++) {
+                int remaining = 9 - counts[k];
+                if (remaining < 0) remaining = 0; // Jaga-jaga agar tidak negatif
+                
+                statusLabels[k-1].setText(String.valueOf(remaining));
+                
+                // Efek visual: Hijau jika sudah habis (0), Putih jika belum
+                if (remaining == 0) {
+                    statusLabels[k-1].setBackground(new Color(144, 238, 144)); // Hijau muda
+                } else {
+                    statusLabels[k-1].setBackground(Color.WHITE);
                 }
             }
         });
@@ -81,17 +167,32 @@ public class SudokuGUI extends javax.swing.JFrame {
 
     //Menampilkan soal awal
     public void setInitialBoard(int[][] board) {
+        int[] counts = new int[10];
+        
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                if (board[i][j] != 0) {
-                    cells[i][j].setText(String.valueOf(board[i][j]));
+                int val = board[i][j];
+                if (val != 0) {
+                    cells[i][j].setText(String.valueOf(val));
                     cells[i][j].setEditable(false); // Soal tidak boleh diedit
                     cells[i][j].setBackground(Color.LIGHT_GRAY);
+                    counts[val]++;
                 } else {
                     cells[i][j].setText("");
                     cells[i][j].setEditable(true); // User boleh isi manual
                 }
             }
+        }
+        
+        // Update status bar awal
+        for (int k = 1; k <= 9; k++) {
+            int remaining = 9 - counts[k];
+            statusLabels[k-1].setText(String.valueOf(remaining));
+             if (remaining == 0) {
+                    statusLabels[k-1].setBackground(new Color(144, 238, 144)); 
+                } else {
+                    statusLabels[k-1].setBackground(Color.WHITE);
+                }
         }
     }
 
