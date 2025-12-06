@@ -21,7 +21,7 @@ public class NumberAgent extends Agent {
 
     @Override
     protected void setup() {
-        // 1. Mengambil Argumen saat Start (menentukan dia angka berapa)
+        // Mengambil Argumen saat Start (menentukan dia angka berapa)
         Object[] args = getArguments();
         if (args != null && args.length > 0) {
             try {
@@ -38,7 +38,7 @@ public class NumberAgent extends Agent {
             return;
         }
 
-        // 2. Menambahkan Perilaku (Behaviour) untuk mendengarkan pesan dari Manager
+        //Menambahkan Perilaku (Behaviour) untuk mendengarkan pesan dari Manager
         addBehaviour(new AnalyzeBoardBehaviour());
     }
 
@@ -141,9 +141,9 @@ public class NumberAgent extends Agent {
             }
         }
 
-        // Cara 2: Naked Single (Fallback)
+        // Cara 2: Naked Single
         //bekerja dengan cara fokus pada satu kotak tertentu jadi tidak ada saingan angka lain di kotak itu.
-        // 2.A. Cek per BARIS
+        //Cek per Baris
         for (int r = 0; r < 9; r++) {
             // Cek apakah baris ini sudah punya angka myNumber
             boolean hasMyNum = false;
@@ -174,7 +174,7 @@ public class NumberAgent extends Agent {
             }
         }
 
-        // 2.B. Cek per KOLOM
+        //Cek per Kolom
         for (int c = 0; c < 9; c++) {
             // Cek apakah kolom ini sudah punya angka myNumber
             boolean hasMyNum = false;
@@ -204,7 +204,7 @@ public class NumberAgent extends Agent {
             }
         }
 
-        // 2.C Cek per BLOK 3x3
+        //Cek per BLOK 3x3
         // Loop untuk setiap blok 3x3 (total ada 9 blok)
         for (int blockRow = 0; blockRow < 9; blockRow += 3) {
             for (int blockCol = 0; blockCol < 9; blockCol += 3) {
@@ -220,7 +220,7 @@ public class NumberAgent extends Agent {
                     }
                 }
 
-                // Cek 2: Jika belum, cari posisi valid di dalam blok ini
+                //Jika belum, cari posisi valid di dalam blok ini
                 if (!hasMyNum) {
                     int validCount = 0;
                     int targetRow = -1;
@@ -240,7 +240,7 @@ public class NumberAgent extends Agent {
                         }
                     }
 
-                    // EUREKA! Cuma ada 1 tempat di blok ini yang muat buat saya.
+                    //Cuma ada 1 tempat di blok ini yang muat buat angkat tsb
                     if (validCount == 1) {
                         sendProposal(originalMsg, targetRow, targetCol);
                         return;
@@ -250,7 +250,7 @@ public class NumberAgent extends Agent {
         }
     }
 
-    // --- Helper Baru: Cek Deduksi ---
+    //Helper untuk Cek Deduksi
     private boolean isOnlyMeValidHere(int[][] board, int row, int col) {
         // Cek semua angka lain (selain myNumber)
         for (int otherNum = 1; otherNum <= 9; otherNum++) {
@@ -272,7 +272,7 @@ public class NumberAgent extends Agent {
         send(reply);
     }
 
-    // 1. Cek apakah angka valid di posisi tersebut (Aturan Sudoku standar)
+    //Cek apakah angka valid di posisi tersebut (Aturan Sudoku standar)
     private boolean isValidMove(int[][] board, int row, int col, int number) {
         // Cek Baris
         for (int i = 0; i < 9; i++) {
@@ -302,7 +302,7 @@ public class NumberAgent extends Agent {
         return true;
     }
 
-    // 2. Mengubah String menjadi Array 2D
+    //Mengubah String menjadi Array 2D
     private int[][] parseBoard(String content) {
         int[][] board = new int[9][9];
         String[] tokens = content.split(",");

@@ -32,7 +32,7 @@ public class ManagerAgent extends Agent {
     protected void setup() {
         System.out.println("Manager Board siap! (" + getLocalName() + ")");
 
-        // 1. Inisialisasi Soal Sudoku (0 = Kosong)
+        //Inisialisasi Soal Sudoku (0 = Kosong)
 //        // Ini contoh soal level "Easy"
 //        board = new int[][]{
 //            {4, 7, 0, 1, 3, 0, 0, 0, 0},
@@ -81,13 +81,13 @@ public class ManagerAgent extends Agent {
 //            {9, 0, 3, 0, 0, 0, 0, 0, 0},
 //            {0, 2, 0, 0, 0, 0, 1, 0, 0}
 //        };
-        // 2. TAMPILKAN GUI
-        //kirim 'this' (agen manager sendiri) ke GUI agar GUI bisa memanggil kita balik
+        //TAMPILKAN GUI
+        //kirim 'this' (agen manager sendiri) ke GUI agar GUI bisa memanggil balik
         myGui = new SudokuGUI(this);
 //        myGui.setInitialBoard(board); // Tampilkan board di layar
         myGui.setVisible(true);
 
-        // 3. Mulai Mendengarkan Usulan (PROPOSE) dari Robot
+        // Mulai Mendengarkan PROPOSE dari Robot
         addBehaviour(new HandleProposalsBehaviour());
     }
 
@@ -98,7 +98,7 @@ public class ManagerAgent extends Agent {
         // Update data internal manager dengan apa yang ada di layar (termasuk input user)
         this.board = currentBoardFromGUI;
 
-        // Sekarang baru broadcast ke robot!
+        // Sekarang baru broadcast ke robot
         broadcastBoard("INFORM");
     }
 
@@ -122,7 +122,7 @@ public class ManagerAgent extends Agent {
                     int col = Integer.parseInt(parts[1]);
                     int number = Integer.parseInt(parts[2]);
 
-                    // LOGIKA VALIDASI MANAGER:
+                    // Validasi Manager:
                     // Cek 1: Apakah kotak masih kosong
                     if (board[row][col] == 0) {
 
@@ -139,7 +139,7 @@ public class ManagerAgent extends Agent {
                         if (isBoardFull()) {
                             System.out.println("SUDOKU SELESAI!");
                             printBoard();
-//                            broadcastBoard("TERMINATE"); // Suruh semua robot pulang
+//                            broadcastBoard("TERMINATE"); // Suruh semua robot terminate
 //                            myAgent.doDelete(); // Matikan diri sendiri
                             System.out.println("Menunggu game baru dari GUI...");
                         } else {
@@ -180,7 +180,7 @@ public class ManagerAgent extends Agent {
         send(msg);
     }
 
-    // Mengubah int[][] menjadi String"
+    // Mengubah int[][] menjadi String
     private String boardToString(int[][] board) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 9; i++) {
