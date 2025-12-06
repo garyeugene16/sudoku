@@ -55,10 +55,17 @@ public class NumberAgent extends Agent {
                 String content = msg.getContent(); // Papan dalam bentuk String (CSV)
 
                 // Jika pesan berisi perintah "TERMINATE", agen mati
-                if (content.equalsIgnoreCase("TERMINATE")) {
-                    System.out.println("Robot " + myNumber + ": Tugas selesai.");
-                    myAgent.doDelete();
-                    return;
+//                if (content.equalsIgnoreCase("TERMINATE")) {
+//                    System.out.println("Robot " + myNumber + ": Tugas selesai.");
+//                    myAgent.doDelete();
+//                    return;
+//                }
+                if (content.length() > 20) { // Papan sudoku string-nya panjang
+                    System.out.println("Robot " + myNumber + " menerima papan baru...");
+                    int[][] board = parseBoard(content);
+                    proposeMove(board, msg);
+                } else {
+                    // Abaikan pesan pendek (misal pesan "DONE" atau sampah)
                 }
 
                 System.out.println("Robot " + myNumber + " menerima papan baru, sedang memindai...");

@@ -8,14 +8,25 @@ import Agent.ManagerAgent;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import java.util.Scanner;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  *
@@ -28,6 +39,19 @@ public class SudokuGUI extends javax.swing.JFrame {
     
     // Label untuk status angka tersisa (1-9)
     private JLabel[] statusLabels = new JLabel[9];
+    private boolean isProgrammaticUpdate = false;
+    
+    private final int[][] templateBoard = {
+        {5, 3, 0, 0, 7, 0, 0, 0, 0}, 
+        {6, 0, 0, 1, 9, 5, 0, 0, 0}, 
+        {0, 9, 8, 0, 0, 0, 0, 6, 0},
+        {8, 0, 0, 0, 6, 0, 0, 0, 3}, 
+        {4, 0, 0, 8, 0, 3, 0, 0, 1}, 
+        {7, 0, 0, 0, 2, 0, 0, 0, 6},
+        {0, 6, 0, 0, 0, 0, 2, 8, 0}, 
+        {0, 0, 0, 4, 1, 9, 0, 0, 5}, 
+        {0, 0, 0, 0, 8, 0, 0, 7, 9}
+    };
 
     private ManagerAgent myAgent;
 
@@ -36,6 +60,7 @@ public class SudokuGUI extends javax.swing.JFrame {
         initComponents();    // Bikin panel & tombol
         initCustomGrid();    // Bikin 81 kotak angka
         initStatusPanel(); // Bikin status Baru
+        initUIKustom();
     }
 
     public SudokuGUI(ManagerAgent agent) {
@@ -43,35 +68,301 @@ public class SudokuGUI extends javax.swing.JFrame {
         initComponents(); // Bikin panel & tombol
         initCustomGrid();  // Bikin 81 kotak angka
         initStatusPanel(); // Bikin status Baru
+        initUIKustom();
     }
 
     //Membuat 81 Kotak secara Otomatis
     private void initCustomGrid() {
-        // 1. Ubah Panel menjadi layout Grid 9x9
-        PuzzlePanel.setLayout(new GridLayout(9, 9));
-
-        // 2. Loop untuk membuat 81 kotak isian
+        // Set layout 9x9 tanpa spasi antar komponen (gap = 0)
+        PuzzlePanel.setLayout(new GridLayout(9, 9, 0, 0)); 
+        
         Font font = new Font("Arial", Font.BOLD, 20);
+
+        // Listener untuk mendeteksi ketikan user secara realtime
+        DocumentListener docListener = new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { calculateStatusRealtime(); }
+            public void removeUpdate(DocumentEvent e) { calculateStatusRealtime(); }
+            public void changedUpdate(DocumentEvent e) { calculateStatusRealtime(); }
+        };
 
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                // Bikin kotak baru
                 cells[i][j] = new JTextField();
-                cells[i][j].setHorizontalAlignment(JTextField.CENTER); // Teks di tengah
+                cells[i][j].setHorizontalAlignment(JTextField.CENTER);
                 cells[i][j].setFont(font);
+                
+                // Pasang penyadap ketikan
+                cells[i][j].getDocument().addDocumentListener(docListener);
 
+                // --- BAGIAN BARU: LOGIKA BORDER 3x3 ---
+                // Jika baris/kolom kelipatan 3, berikan garis tebal (3px), selain itu tipis (1px)
+                int top = (i % 3 == 0) ? 3 : 1;
+                int left = (j % 3 == 0) ? 3 : 1;
+                int bottom = (i == 8) ? 3 : 0; // Garis bawah hanya untuk baris terakhir
+                int right = (j == 8) ? 3 : 0;  // Garis kanan hanya untuk kolom terakhir
+
+                // Terapkan border warna HITAM
+                cells[i][j].setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, Color.BLACK));
+
+                // Warna background selang-seling (Opsional, bisa dihapus jika ingin putih polos)
                 if (((i / 3) + (j / 3)) % 2 == 0) {
-                    cells[i][j].setBackground(new Color(240, 240, 240));
+                    cells[i][j].setBackground(new Color(245, 245, 245));
+                } else {
+                    cells[i][j].setBackground(Color.WHITE);
                 }
-
-                // Masukkan kotak ke dalam PuzzlePanel
+                
                 PuzzlePanel.add(cells[i][j]);
             }
         }
-
-        // Refresh tampilan agar kotak muncul
         PuzzlePanel.revalidate();
         PuzzlePanel.repaint();
+    }
+    
+    private void initUIKustom() {
+        // 1. Reset Content Pane dan set Layout baru
+        getContentPane().removeAll(); // Hapus layout bawaan NetBeans
+        setLayout(new BorderLayout(10, 10));
+        setSize(450, 650); // Perbesar ukuran window
+
+        // 2. Panel ATAS (Judul + Tombol Template/Import/Clear)
+        JPanel topContainer = new JPanel();
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        
+        // Kita pakai label judul yang sudah ada di NetBeans, tapi diatur ulang
+        jLabel1.setFont(new Font("Arial", Font.BOLD, 24));
+        jLabel1.setAlignmentX(CENTER_ALIGNMENT);
+        
+        JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnTemplate = new JButton("Template");
+        JButton btnImport = new JButton("Import Soal");
+        JButton btnClear = new JButton("Hapus Papan");
+
+        // Aksi Tombol
+        btnTemplate.addActionListener(e -> loadBoardToGUI(templateBoard));
+        btnImport.addActionListener(e -> actionImport());
+        btnClear.addActionListener(e -> clearBoardGUI());
+
+        menuPanel.add(btnTemplate);
+        menuPanel.add(btnImport);
+        menuPanel.add(btnClear);
+
+        topContainer.add(Box.createVerticalStrut(10));
+        topContainer.add(jLabel1);
+        topContainer.add(menuPanel);
+        
+        add(topContainer, BorderLayout.NORTH);
+
+        // 3. Panel TENGAH (Papan Sudoku)
+        // Kita gunakan ulang PuzzlePanel yang dibuat NetBeans
+        PuzzlePanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+        add(PuzzlePanel, BorderLayout.CENTER);
+
+        // 4. Panel BAWAH (Status Bar + Tombol Cek & Solve)
+        JPanel bottomContainer = new JPanel();
+        bottomContainer.setLayout(new BoxLayout(bottomContainer, BoxLayout.Y_AXIS));
+
+        // -- Status Bar (Tabel)
+        JPanel statusPanel = new JPanel(new GridLayout(2, 10));
+        statusPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        
+        // Header Status
+        addCellToStatus(statusPanel, "Angka", true);
+        for(int i=1; i<=9; i++) addCellToStatus(statusPanel, String.valueOf(i), true);
+        // Isi Status
+        addCellToStatus(statusPanel, "Sisa", true);
+        for(int i=0; i<9; i++) {
+            statusLabels[i] = new JLabel("9");
+            statusLabels[i].setHorizontalAlignment(JLabel.CENTER);
+            statusLabels[i].setBorder(BorderFactory.createLineBorder(Color.GRAY));
+            statusLabels[i].setOpaque(true);
+            statusLabels[i].setBackground(Color.WHITE);
+            statusPanel.add(statusLabels[i]);
+        }
+
+        // -- Tombol Aksi
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnCheck = new JButton("Cek Jawaban");
+        btnCheck.addActionListener(e -> actionCheck());
+        
+        // Kita gunakan ulang btnSolve dari NetBeans agar event-nya tetap jalan
+        btnSolve.setPreferredSize(new Dimension(150, 35));
+        
+        actionPanel.add(btnCheck);
+        actionPanel.add(btnSolve); // btnSolve bawaan NetBeans dimasukkan ke sini
+
+        bottomContainer.add(statusPanel);
+        bottomContainer.add(actionPanel);
+        bottomContainer.add(Box.createVerticalStrut(10));
+
+        add(bottomContainer, BorderLayout.SOUTH);
+        
+        // Refresh layout
+        revalidate();
+    }
+
+    // Helper kecil untuk tabel status
+    private void addCellToStatus(JPanel p, String text, boolean isHeader) {
+        JLabel l = new JLabel(text);
+        l.setHorizontalAlignment(JLabel.CENTER);
+        l.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        if (isHeader) {
+            l.setFont(l.getFont().deriveFont(Font.BOLD));
+            l.setBackground(new Color(220, 220, 220));
+            l.setOpaque(true);
+        }
+        p.add(l);
+    }
+    
+    private void actionImport() {
+        JFileChooser fileChooser = new JFileChooser(new File("."));
+        fileChooser.setDialogTitle("Pilih File Soal Sudoku (.txt)");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
+        
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try {
+                int[][] importedBoard = new int[9][9];
+                Scanner scanner = new Scanner(fileChooser.getSelectedFile());
+                for (int i = 0; i < 9; i++) {
+                    for (int j = 0; j < 9; j++) {
+                        if (scanner.hasNextInt()) importedBoard[i][j] = scanner.nextInt();
+                        else { if(scanner.hasNext()) scanner.next(); importedBoard[i][j] = 0; }
+                    }
+                }
+                scanner.close();
+                loadBoardToGUI(importedBoard);
+                JOptionPane.showMessageDialog(this, "Soal berhasil dimuat!");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Gagal memuat file: " + e.getMessage());
+            }
+        }
+    }
+
+    // === LOGIKA CEK JAWABAN ===
+    private void actionCheck() {
+        boolean isValid = true;
+        boolean isFull = true;
+        int[][] tempBoard = new int[9][9];
+
+        // 1. Ambil data & Reset warna
+        for(int i=0; i<9; i++){
+            for(int j=0; j<9; j++){
+                if(cells[i][j].isEditable()) cells[i][j].setBackground(Color.WHITE);
+                
+                String txt = cells[i][j].getText().trim();
+                if(txt.isEmpty()) { 
+                    tempBoard[i][j] = 0; 
+                    isFull = false; 
+                } else {
+                    try { tempBoard[i][j] = Integer.parseInt(txt); } 
+                    catch(Exception e){ tempBoard[i][j] = 0; }
+                }
+            }
+        }
+
+        // 2. Validasi
+        for(int i=0; i<9; i++){
+            for(int j=0; j<9; j++){
+                int val = tempBoard[i][j];
+                if(val != 0) {
+                    tempBoard[i][j] = 0; // Kosongkan diri sendiri utk cek
+                    if(!isValidPlacement(tempBoard, i, j, val)) {
+                        isValid = false;
+                        cells[i][j].setBackground(new Color(255, 200, 200)); // Merah
+                    }
+                    tempBoard[i][j] = val; // Kembalikan
+                }
+            }
+        }
+
+        if(!isValid) JOptionPane.showMessageDialog(this, "Ada kesalahan (kotak merah)!", "Cek", JOptionPane.WARNING_MESSAGE);
+        else if(!isFull) JOptionPane.showMessageDialog(this, "Benar sejauh ini, tapi belum selesai.", "Cek", JOptionPane.INFORMATION_MESSAGE);
+        else JOptionPane.showMessageDialog(this, "SELESAI! Jawaban Benar.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // Helper buat validasi Sudoku Standard
+    private boolean isValidPlacement(int[][] board, int row, int col, int num) {
+        for (int i = 0; i < 9; i++) {
+            if (board[row][i] == num) return false;
+            if (board[i][col] == num) return false;
+        }
+        int startRow = row - row % 3;
+        int startCol = col - col % 3;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i + startRow][j + startCol] == num) return false;
+            }
+        }
+        return true;
+    }
+
+    // === LOGIKA STATUS BAR & UPDATE ===
+    private void calculateStatusRealtime() {
+        if (isProgrammaticUpdate) return;
+        int[] counts = new int[10];
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                try {
+                    String t = cells[i][j].getText().trim();
+                    if(!t.isEmpty()) {
+                        int v = Integer.parseInt(t);
+                        if(v >=1 && v<=9) counts[v]++;
+                    }
+                } catch(Exception e){}
+            }
+        }
+        updateStatusBarGUI(counts);
+    }
+
+    private void updateStatusBarGUI(int[] counts) {
+        for (int k = 1; k <= 9; k++) {
+            int rem = 9 - counts[k];
+            if(rem < 0) rem = 0;
+            statusLabels[k-1].setText(String.valueOf(rem));
+            statusLabels[k-1].setBackground(rem == 0 ? new Color(144, 238, 144) : Color.WHITE);
+        }
+    }
+
+    public void loadBoardToGUI(int[][] board) {
+        isProgrammaticUpdate = true; // Matikan listener agar tidak berat
+        btnSolve.setEnabled(true);
+        btnSolve.setText("SOLVE (Robot)");
+        int[] counts = new int[10];
+
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                int val = board[i][j];
+                cells[i][j].setBackground(Color.WHITE); 
+                if (val != 0) {
+                    cells[i][j].setText(String.valueOf(val));
+                    cells[i][j].setEditable(false);
+                    cells[i][j].setBackground(new Color(230, 230, 230)); 
+                    cells[i][j].setForeground(Color.BLACK);
+                    counts[val]++;
+                } else {
+                    cells[i][j].setText("");
+                    cells[i][j].setEditable(true);
+                    if (((i / 3) + (j / 3)) % 2 == 0) cells[i][j].setBackground(new Color(250, 250, 250));
+                    cells[i][j].setForeground(Color.BLACK);
+                }
+            }
+        }
+        updateStatusBarGUI(counts);
+        isProgrammaticUpdate = false;
+    }
+
+    public void clearBoardGUI() {
+        isProgrammaticUpdate = true;
+        btnSolve.setEnabled(true);
+        btnSolve.setText("SOLVE (Robot)");
+        for(int i=0; i<9; i++) {
+            for(int j=0; j<9; j++) {
+                cells[i][j].setText("");
+                cells[i][j].setEditable(true);
+                cells[i][j].setBackground(Color.WHITE);
+            }
+        }
+        updateStatusBarGUI(new int[10]);
+        isProgrammaticUpdate = false;
     }
     
     private void initStatusPanel() {
@@ -118,50 +409,39 @@ public class SudokuGUI extends javax.swing.JFrame {
         pack();
     }
     
-    // Helper untuk membuat kotak di status bar
-    private void addCellToStatus(JPanel p, String text, boolean isHeader) {
-        JLabel l = new JLabel(text);
-        l.setHorizontalAlignment(JLabel.CENTER);
-        l.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        if (isHeader) {
-            l.setFont(l.getFont().deriveFont(Font.BOLD));
-            l.setBackground(new Color(220, 220, 220));
-            l.setOpaque(true);
-        }
-        p.add(l);
-    }
+//    // Helper untuk membuat kotak di status bar
+//    private void addCellToStatus(JPanel p, String text, boolean isHeader) {
+//        JLabel l = new JLabel(text);
+//        l.setHorizontalAlignment(JLabel.CENTER);
+//        l.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+//        if (isHeader) {
+//            l.setFont(l.getFont().deriveFont(Font.BOLD));
+//            l.setBackground(new Color(220, 220, 220));
+//            l.setOpaque(true);
+//        }
+//        p.add(l);
+//    }
     
     // Update board
     public void updateBoardGUI(int[][] board) {
-        int[] counts = new int[10]; // Array hitung frekuensi angka 1-9
         SwingUtilities.invokeLater(() -> {
+            isProgrammaticUpdate = true;
+            int[] counts = new int[10];
             for (int i = 0; i < 9; i++) {
                 for (int j = 0; j < 9; j++) {
                     int val = board[i][j];
-                    if (board[i][j] != 0) {
-                        cells[i][j].setText(String.valueOf(board[i][j]));
-                        // Beri warna biru untuk angka yang ditemukan robot
-                        cells[i][j].setForeground(Color.BLUE);
-                        // Hitung jumlah angka yang muncul
-                        if(val >= 1 && val <= 9) {
-                            counts[val]++;
+                    if (val != 0) {
+                        cells[i][j].setText(String.valueOf(val));
+                        // Jika sel ini awalnya editable (berarti bukan soal), beri warna biru
+                        if (cells[i][j].isEditable()) {
+                            cells[i][j].setForeground(Color.BLUE);
                         }
+                        if(val >=1 && val <=9) counts[val]++;
                     }
                 }
             }
-            for (int k = 1; k <= 9; k++) {
-                int remaining = 9 - counts[k];
-                if (remaining < 0) remaining = 0; // Jaga-jaga agar tidak negatif
-                
-                statusLabels[k-1].setText(String.valueOf(remaining));
-                
-                // Efek visual: Hijau jika sudah habis (0), Putih jika belum
-                if (remaining == 0) {
-                    statusLabels[k-1].setBackground(new Color(144, 238, 144)); // Hijau muda
-                } else {
-                    statusLabels[k-1].setBackground(Color.WHITE);
-                }
-            }
+            updateStatusBarGUI(counts); // Update status
+            isProgrammaticUpdate = false;
         });
     }
 
