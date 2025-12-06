@@ -33,23 +33,58 @@ public class ManagerAgent extends Agent {
         System.out.println("Manager Board siap! (" + getLocalName() + ")");
 
         // 1. Inisialisasi Soal Sudoku (0 = Kosong)
-        // Ini contoh soal level "Easy"
-        board = new int[][]{
-            {5, 3, 0, 0, 7, 0, 0, 0, 0},
-            {6, 0, 0, 1, 9, 5, 0, 0, 0},
-            {0, 9, 8, 0, 0, 0, 0, 6, 0},
-            {8, 0, 0, 0, 6, 0, 0, 0, 3},
-            {4, 0, 0, 8, 0, 3, 0, 0, 1},
-            {7, 0, 0, 0, 2, 0, 0, 0, 6},
-            {0, 6, 0, 0, 0, 0, 2, 8, 0},
-            {0, 0, 0, 4, 1, 9, 0, 0, 5},
-            {0, 0, 0, 0, 8, 0, 0, 7, 9}
-        };
-
+//        // Ini contoh soal level "Easy"
+//        board = new int[][]{
+//            {4, 7, 0, 1, 3, 0, 0, 0, 0},
+//            {0, 0, 2, 0, 9, 0, 0, 0, 0},
+//            {5, 0, 0, 0, 6, 4, 0, 0, 0},
+//            {2, 0, 4, 0, 8, 0, 0, 9, 0},
+//            {0, 8, 0, 0, 0, 5, 0, 4, 0},
+//            {0, 1, 3, 0, 0, 0, 0, 0, 8},
+//            {0, 9, 0, 0, 0, 0, 4, 7, 3},
+//            {7, 0, 0, 0, 4, 0, 8, 5, 0},
+//            {0, 0, 0, 0, 0, 0, 9, 0, 6}
+//        };
+//        //Level: EASY (Beda Soal)
+//        board = new int[][]{
+//            {0, 0, 0, 2, 6, 0, 7, 0, 1},
+//            {6, 8, 0, 0, 7, 0, 0, 9, 0},
+//            {1, 9, 0, 0, 0, 4, 5, 0, 0},
+//            {8, 2, 0, 1, 0, 0, 0, 4, 0},
+//            {0, 0, 4, 6, 0, 2, 9, 0, 0},
+//            {0, 5, 0, 0, 0, 3, 0, 2, 8},
+//            {0, 0, 9, 3, 0, 0, 0, 7, 4},
+//            {0, 4, 0, 0, 5, 0, 0, 3, 6},
+//            {7, 0, 3, 0, 1, 8, 0, 0, 0}
+//        };
+//        //hard
+//        board = new int[][]{
+//            {0, 2, 0, 6, 0, 8, 0, 0, 0},
+//            {5, 8, 0, 0, 0, 9, 7, 0, 0},
+//            {0, 0, 0, 0, 4, 0, 3, 2, 8},
+//            {3, 7, 0, 0, 0, 0, 5, 0, 0},
+//            {6, 0, 0, 0, 0, 0, 0, 0, 4},
+//            {0, 0, 8, 0, 0, 0, 0, 1, 3},
+//            {0, 0, 0, 0, 2, 4, 0, 0, 0},
+//            {0, 0, 9, 8, 0, 0, 0, 3, 6},
+//            {8, 1, 0, 3, 0, 6, 0, 9, 0}
+//        };
+//        //expert
+//        board = new int[][]{
+//            {0, 0, 0, 6, 0, 0, 4, 0, 0},
+//            {7, 0, 0, 0, 0, 3, 6, 0, 0},
+//            {0, 0, 0, 0, 9, 1, 0, 8, 0},
+//            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+//            {0, 5, 0, 1, 8, 0, 0, 0, 3},
+//            {0, 0, 0, 3, 0, 6, 0, 4, 5},
+//            {0, 4, 0, 2, 0, 0, 0, 6, 0},
+//            {9, 0, 3, 0, 0, 0, 0, 0, 0},
+//            {0, 2, 0, 0, 0, 0, 1, 0, 0}
+//        };
         // 2. TAMPILKAN GUI
         //kirim 'this' (agen manager sendiri) ke GUI agar GUI bisa memanggil kita balik
         myGui = new SudokuGUI(this);
-        myGui.setInitialBoard(board); // Tampilkan board di layar
+//        myGui.setInitialBoard(board); // Tampilkan board di layar
         myGui.setVisible(true);
 
         // 3. Mulai Mendengarkan Usulan (PROPOSE) dari Robot
@@ -95,7 +130,7 @@ public class ManagerAgent extends Agent {
                         board[row][col] = number;
                         System.out.println("TERIMA: " + senderName + " mengisi angka " + number + " di [" + row + "," + col + "]");
 
-                        // --- UPDATE GUI SECARA REAL-TIME ---
+                        //UPDATE GUI
                         if (myGui != null) {
                             myGui.updateBoardGUI(board);
                         }
@@ -104,8 +139,9 @@ public class ManagerAgent extends Agent {
                         if (isBoardFull()) {
                             System.out.println("SUDOKU SELESAI!");
                             printBoard();
-                            broadcastBoard("TERMINATE"); // Suruh semua robot pulang
+//                            broadcastBoard("TERMINATE"); // Suruh semua robot pulang
 //                            myAgent.doDelete(); // Matikan diri sendiri
+                            System.out.println("Menunggu game baru dari GUI...");
                         } else {
                             // Jika belum selesai, Broadcast papan terbaru ke semua orang
                             broadcastBoard("INFORM");
